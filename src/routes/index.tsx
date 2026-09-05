@@ -78,6 +78,8 @@ function Game() {
   const [lives, setLives] = useState(3);
   const [autoSwap, setAutoSwap] = useState(true);
   const [swapIn, setSwapIn] = useState(AUTO_SWAP_SECONDS);
+  const [pacSkin, setPacSkin] = useState(0);
+  const [ghostSkin, setGhostSkin] = useState(0);
 
   const world = useRef<{
     maze: ParsedMaze;
