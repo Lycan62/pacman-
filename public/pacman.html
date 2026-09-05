@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Pac-Arcade — jeu Pac-Man en HTML</title>
+<meta name="description" content="Jeu Pac-Man jouable au clavier ou au tactile : 4 labyrinthes qui changent seuls, 12 niveaux, skins de Pac-Man et des fantômes." />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #10091f radial-gradient(circle at 20% 0%, rgba(112,60,190,.55), transparent 55%),
+                radial-gradient(circle at 85% 100%, rgba(40,150,190,.35), transparent 55%);
+    background-attachment: fixed;
+    color: #f6f2e6;
+    font-family: "Outfit", system-ui, -apple-system, sans-serif;
+    padding: 16px;
+  }
+  h1 { font-family: monospace; font-size: 1.4rem; letter-spacing: .1em; color: #ffe14d; margin: 0 0 4px; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .wrap { grid-template-columns: 1fr 280px; align-items: start; } }
+  .panel { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 16px; background: #0a0618; touch-action: none; }
+  .hud { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; font-family: monospace; font-size: .75rem; margin-bottom: 10px; }
+  .hud span b { color: #ffe14d; }
+  button.arcade {
+    font-family: monospace; font-size: .7rem; letter-spacing: .04em; cursor: pointer;
+    background: #ffe14d; color: #1a1030; border: 0; border-radius: 12px; padding: 10px 16px;
+    box-shadow: 0 0 22px -6px rgba(90,200,230,.8);
+  }
+  button.arcade:hover { filter: brightness(1.08); }
+  label { display: block; font-size: .75rem; opacity: .8; margin: 12px 0 6px; }
+  select, input[type=range] { width: 100%; }
+  select { background: #1e1436; color: inherit; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; font-size: .8rem; }
+  .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 220px; margin: 12px auto 0; }
+  .dpad button {
+    aspect-ratio: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
+    background: rgba(255,255,255,.1); color: inherit; font-size: 1.1rem; cursor: pointer; touch-action: manipulation;
+  }
+  .dpad button:active { background: #5ac8e6; color: #10091f; }
+  .msg { text-align: center; font-family: monospace; font-size: .8rem; color: #5ac8e6; min-height: 1.2em; margin-top: 8px; }
+  .hint { font-size: .7rem; opacity: .65; line-height: 1.5; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main class="panel">
+    <h1>PAC-ARCADE</h1>
+    <div class="hud">
+      <span>SCORE <b id="score">0</b></span>
+      <span>NIVEAU <b id="level">1</b></span>
+      <span>VIES <b id="lives">3</b></span>
+      <span>MEILLEUR <b id="best">0</b></span>
+    </div>
+    <canvas id="game" width="630" height="660"></canvas>
+    <div class="msg" id="msg">Appuie sur une flèche ou ZQSD pour démarrer</div>
+    <div class="dpad">
+      <span></span><button data-dir="up">▲</button><span></span>
+      <button data-dir="left">◀</button><button id="pause">II</button><button data-dir="right">▶</button>
+      <span></span><button data-dir="down">▼</button><span></span>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <button class="arcade" id="restart">REJOUER</button>
+
+    <label for="maze">Labyrinthe</label>
+    <select id="maze"></select>
+
+    <label for="lvl">Niveau de départ</label>
+    <select id="lvl"></select>
+
+    <label class="row"><input type="checkbox" id="auto" checked /> Changer de map tout seul</label>
+    <label for="every">Toutes les <b id="everyVal">30</b> s</label>
+    <input type="range" id="every" min="10" max="90" step="5" value="30" />
+
+    <label for="skin">Skin de Pac-Man</label>
+    <select id="skin"></select>
+
+    <label for="gskin">Skin des fantômes</label>
+    <select id="gskin"></select>
+
+    <p class="hint">Clavier : flèches ou Z (haut), S (bas), Q (gauche), D (droite). Espace = pause.<br />
+    Tactile : pavé directionnel ou glisse ton doigt sur le plateau.</p>
+  </aside>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- Labyrinthes ---------------- */
+  const MAZE_NAMES = ["Classique", "Spirale", "Cathédrale", "Dédale"];
+  const MAZES = [
+`#####################
+#.........#.........#
+#o###.###.#.###.###o#
+#.###.###.#.###.###.#
+#...................#
+#.###.#.#####.#.###.#
+#.....#...#...#.....#
+#####.###.#.###.#####
+#####.#.......#.#####
+#####.#.##G##.#.#####
+#.......#GGG#.......#
+#####.#.#####.#.#####
+#####.#.......#.#####
+#####.#.#####.#.#####
+#.........#.........#
+#.###.###.#.###.###.#
+#o..#.....P.....#..o#
+###.#.#.#####.#.#.###
+#...#.#...#...#.#...#
+#.....###.#.###.....#
+#####################`,
+`#####################
+#o.......#.......o..#
+#.#####.###.#####.#.#
+#.#...#.....#...#...#
+#.#.#.#####.#.#.###.#
+#...#...#...#.#.....#
+###.###.#.###.#####.#
+#.......#.#.......#.#
+#.#####.#.#.#####.#.#
+#.#..GGG#.#.....#...#
+#.#.##G##.###.#.###.#
+#.#.....#...#.#...#.#
+#.#####.###.#.###.#.#
+#.....#.....#...#..o#
+#####.#.#######.###.#
+#o..#...#.....#.....#
+#.#.#####.###.#####.#
+#.#.......#P#.......#
+#.#####.###.###.###.#
+#.......#.......#...#
+#####################`,
+`#####################
+#o...#.........#...o#
+#.##.#.#######.#.##.#
+#.##...#.....#...##.#
+#....#.#.###.#.#....#
+####.#.#.#G#.#.#.####
+#....#.#.###.#.#....#
+#.####.#..G..#.####.#
+#......#.###.#......#
+######.#.#.#.#.######
+#........#.#........#
+######.#.#.#.#.######
+#......#.###.#......#
+#.####.#.....#.####.#
+#....#.#######.#....#
+####.#....P....#.####
+#....#.#######.#....#
+#.####.........####.#
+#o...#####.#####...o#
+#...................#
+#####################`,
+`#####################
+#.......#...#.......#
+#o#####.#.#.#####.#o#
+#.#...#.#.#.#...#.#.#
+#...#.#.#.#.#.#.#...#
+###.#.#...#...#.#.###
+#...#.#####.###.#...#
+#.###.....#.#...#.###
+#.....###.#.#.###...#
+#####.#GGG#.#...#.###
+#.....#.G#..#.###...#
+#.#####.##.##.#...#.#
+#.#...#.....#.###.#.#
+#.#.#.#####.#...#.#.#
+#...#.....#.###.#...#
+###.#####.#...#.###.#
+#o......#.###.#....o#
+#.#####.#..P..#####.#
+#.....#.#####.#.....#
+#.###...........###.#
+#####################`
+  ];
+
+  function parseMaze(src) {
+    const lines = src.split("\n");
+    const rows = lines.length, cols = lines[0].length, size = rows * cols;
+    const walls = new Uint8Array(size), pellets = new Uint8Array(size), power = new Uint8Array(size);
+    let start = { x: 1, y: 1 };
+    const ghosts = [];
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const c = lines[y][x] || "#", i = y * cols + x;
+        if (c === "#") walls[i] = 1;
+        if (c === ".") pellets[i] = 1;
+        if (c === "o") power[i] = 1;
+        if (c === "P") start = { x, y };
+        if (c === "G") ghosts.push({ x, y });
+      }
+    }
+    // ne garder que les cases atteignables depuis le départ
+    const seen = new Uint8Array(size), open = [], queue = [start];
+    seen[start.y * cols + start.x] = 1;
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    while (queue.length) {
+      const cur = queue.shift(); open.push(cur);
+      for (const [dx, dy] of dirs) {
+        const nx = cur.x + dx, ny = cur.y + dy;
+        if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+        const ni = ny * cols + nx;
+        if (walls[ni] || seen[ni]) continue;
+        seen[ni] = 1; queue.push({ x: nx, y: ny });
+      }
+    }
+    let total = 0;
+    for (let i = 0; i < size; i++) {
+      if (!seen[i]) { pellets[i] = 0; power[i] = 0; }
+      if (pellets[i] || power[i]) total++;
+    }
+    const spawns = ghosts.filter(g => seen[g.y * cols + g.x]);
+    const far = open.slice().sort((a, b) =>
+      Math.hypot(b.x - start.x, b.y - start.y) - Math.hypot(a.x - start.x, a.y - start.y));
+    let k = 0;
+    while (spawns.length < 4) { spawns.push(far[k % far.length] || start); k++; }
+    return { walls, pellets, power, start, ghosts: spawns.slice(0, 4), total, cols, rows };
+  }
+
+  /* ---------------- Skins ---------------- */
+  const PAC_SKINS = [
+    { name: "Classique", color: "#ffe14d" },
+    { name: "Menthe", color: "#6ef2b8" },
+    { name: "Fraise", color: "#ff6f91" },
+    { name: "Kiwi", color: "#b7f24d" },
+    { name: "Néon violet", color: "#c46bff" }
+  ];
+  const GHOST_SKINS = [
+    { name: "Arcade", colors: ["#ff4d6d", "#ffb3de", "#5ce1e6", "#ffa64d"] },
+    { name: "Bonbons", colors: ["#ff8fab", "#c77dff", "#80ffdb", "#ffd166"] },
+    { name: "Lave", colors: ["#ff3c00", "#ff7b00", "#ffb703", "#e63946"] },
+    { name: "Océan", colors: ["#00b4d8", "#48cae4", "#90e0ef", "#0077b6"] }
+  ];
+
+  /* ---------------- État ---------------- */
+  const TILE = 30;
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const $ = id => document.getElementById(id);
+
+  let mazeIndex = 0, level = 1, score = 0, lives = 3, best = 0;
+  let maze, pellets, power, eaten, pac, ghosts, frightened = 0, running = false, over = false, won = false;
+  let mouth = 0, lastTime = 0, moveAcc = 0, ghostAcc = 0, autoTimer = 0;
+  let pacSkin = 0, ghostSkin = 0;
+
+  try { best = parseInt(localStorage.getItem("pacarcade-best") || "0", 10) || 0; } catch (e) {}
+
+  function loadMaze(i, keepScore) {
+    mazeIndex = i;
+    maze = parseMaze(MAZES[i]);
+    pellets = Uint8Array.from(maze.pellets);
+    power = Uint8Array.from(maze.power);
+    eaten = 0;
+    canvas.width = maze.cols * TILE;
+    canvas.height = maze.rows * TILE;
+    resetActors();
+    if (!keepScore) { score = 0; lives = 3; }
+    over = false; won = false; frightened = 0; autoTimer = 0;
+    updateHud();
+  }
+
+  function resetActors() {
+    pac = { x: maze.start.x, y: maze.start.y, dir: [0, 0], next: [0, 0] };
+    ghosts = maze.ghosts.map((g, i) => ({ x: g.x, y: g.y, home: { x: g.x, y: g.y }, dir: [0, 0], id: i, dead: false }));
+  }
+
+  function isWall(x, y) {
+    if (x < 0 || y < 0 || x >= maze.cols || y >= maze.rows) return true;
+    return maze.walls[y * maze.cols + x] === 1;
+  }
+
+  function updateHud() {
+    $("score").textContent = score;
+    $("level").textContent = level;
+    $("lives").textContent = lives;
+    $("best").textContent = best;
+  }
+
+  function setMsg(t) { $("msg").textContent = t; }
+
+  /* ---------------- Contrôles ---------------- */
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  function press(name) {
+    pac.next = DIRS[name];
+    if (!running && !over) { running = true; setMsg(""); }
+  }
+  window.addEventListener("keydown", e => {
+    const k = e.key.toLowerCase();
+    let d = null;
+    if (k === "arrowup" || k === "z" || k === "w") d = "up";
+    else if (k === "arrowdown" || k === "s") d = "down";
+    else if (k === "arrowleft" || k === "q" || k === "a") d = "left";
+    else if (k === "arrowright" || k === "d") d = "right";
+    else if (k === " ") { e.preventDefault(); togglePause(); return; }
+    if (d) { e.preventDefault(); press(d); }
+  });
+  document.querySelectorAll("[data-dir]").forEach(b =>
+    b.addEventListener("click", () => press(b.dataset.dir)));
+  $("pause").addEventListener("click", togglePause);
+  function togglePause() {
+    if (over) return;
+    running = !running;
+    setMsg(running ? "" : "PAUSE");
+  }
+
+  let touchStart = null;
+  canvas.addEventListener("touchstart", e => {
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: true });
+  canvas.addEventListener("touchend", e => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+    press(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+    touchStart = null;
+  }, { passive: true });
+
+  /* ---------------- Boucle ---------------- */
+  function step() {
+    // Pac-Man
+    if (!isWall(pac.x + pac.next[0], pac.y + pac.next[1]) && (pac.next[0] || pac.next[1])) pac.dir = pac.next;
+    const nx = pac.x + pac.dir[0], ny = pac.y + pac.dir[1];
+    if (!isWall(nx, ny)) { pac.x = nx; pac.y = ny; }
+
+    const i = pac.y * maze.cols + pac.x;
+    if (pellets[i]) { pellets[i] = 0; score += 10; eaten++; }
+    if (power[i]) { power[i] = 0; score += 50; eaten++; frightened = 7000; }
+
+    if (eaten >= maze.total) {
+      won = true; running = false;
+      level = Math.min(level + 1, 12);
+      setMsg("Niveau réussi ! Map suivante…");
+      setTimeout(() => { loadMaze((mazeIndex + 1) % MAZES.length, true); setMsg("Prêt ? Bouge pour jouer"); }, 900);
+      return;
+    }
+    if (score > best) { best = score; try { localStorage.setItem("pacarcade-best", String(best)); } catch (e) {} }
+    updateHud();
+  }
+
+  function moveGhost(g) {
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]].filter(d => !isWall(g.x + d[0], g.y + d[1]));
+    if (!dirs.length) return;
+    const back = dirs.filter(d => !(d[0] === -g.dir[0] && d[1] === -g.dir[1]));
+    const opts = back.length ? back : dirs;
+    const target = g.dead ? g.home : pac;
+    const chase = frightened > 0 && !g.dead ? -1 : 1;
+    const smart = Math.min(0.45 + level * 0.04, 0.9);
+    let d;
+    if (Math.random() < smart) {
+      d = opts.slice().sort((a, b) =>
+        chase * (Math.hypot(g.x + a[0] - target.x, g.y + a[1] - target.y)
+               - Math.hypot(g.x + b[0] - target.x, g.y + b[1] - target.y)))[0];
+    } else {
+      d = opts[Math.floor(Math.random() * opts.length)];
+    }
+    g.dir = d; g.x += d[0]; g.y += d[1];
+    if (g.dead && g.x === g.home.x && g.y === g.home.y) g.dead = false;
+  }
+
+  function collide() {
+    for (const g of ghosts) {
+      if (g.x !== pac.x || g.y !== pac.y || g.dead) continue;
+      if (frightened > 0) { g.dead = true; score += 200; }
+      else {
+        lives--;
+        running = false;
+        if (lives <= 0) { over = true; setMsg("GAME OVER — clique sur REJOUER"); }
+        else { setMsg("Aïe ! Bouge pour repartir"); resetActors(); }
+        updateHud();
+        return;
+      }
+    }
+  }
+
+  function loop(t) {
+    const dt = Math.min(t - lastTime || 16, 60);
+    lastTime = t;
+    if (running && !over) {
+      mouth += dt / 120;
+      const pacDelay = Math.max(95, 165 - level * 5);
+      const ghostDelay = Math.max(110, 220 - level * 9);
+      moveAcc += dt; ghostAcc += dt;
+      if (moveAcc >= pacDelay) { moveAcc = 0; step(); if (!won) collide(); }
+      if (ghostAcc >= ghostDelay) { ghostAcc = 0; ghosts.forEach(moveGhost); collide(); }
+      if (frightened > 0) frightened = Math.max(0, frightened - dt);
+      if ($("auto").checked) {
+        autoTimer += dt;
+        if (autoTimer >= parseInt($("every").value, 10) * 1000) {
+          autoTimer = 0;
+          const next = (mazeIndex + 1) % MAZES.length;
+          loadMaze(next, true);
+          $("maze").value = String(next);
+          setMsg("Nouvelle map : " + MAZE_NAMES[next]);
+        }
+      }
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------------- Dessin ---------------- */
+  function draw() {
+    ctx.fillStyle = "#0a0618";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < maze.rows; y++) {
+      for (let x = 0; x < maze.cols; x++) {
+        const i = y * maze.cols + x, px = x * TILE, py = y * TILE;
+        if (maze.walls[i]) {
+          ctx.fillStyle = "#2a2060";
+          ctx.strokeStyle = "#5f4fd6";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(px + 2, py + 2, TILE - 4, TILE - 4, 6);
+          ctx.fill(); ctx.stroke();
+        } else if (pellets[i]) {
+          ctx.fillStyle = "#ffeec2";
+          ctx.beginPath(); ctx.arc(px + TILE / 2, py + TILE / 2, 3, 0, Math.PI * 2); ctx.fill();
+        } else if (power[i]) {
+          ctx.fillStyle = "#5ce1e6";
+          ctx.beginPath();
+          ctx.arc(px + TILE / 2, py + TILE / 2, 7 + Math.sin(mouth * 2) * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // fantômes
+    ghosts.forEach(g => {
+      const cx = g.x * TILE + TILE / 2, cy = g.y * TILE + TILE / 2, r = TILE * 0.4;
+      let color = GHOST_SKINS[ghostSkin].colors[g.id % 4];
+      if (g.dead) color = "#6b6b8a";
+      else if (frightened > 0) color = frightened < 2000 && Math.floor(frightened / 200) % 2 ? "#ffffff" : "#3a5bff";
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy - 2, r, Math.PI, 0);
+      ctx.lineTo(cx + r, cy + r);
+      for (let k = 0; k < 3; k++) ctx.lineTo(cx + r - (r * 2 / 3) * (k + 0.5), cy + r - (k % 2 ? 0 : 5));
+      ctx.lineTo(cx - r, cy + r);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(cx - 5, cy - 4, 3.2, 0, Math.PI * 2); ctx.arc(cx + 5, cy - 4, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#12102a";
+      ctx.beginPath(); ctx.arc(cx - 5 + g.dir[0] * 1.4, cy - 4 + g.dir[1] * 1.4, 1.6, 0, Math.PI * 2);
+      ctx.arc(cx + 5 + g.dir[0] * 1.4, cy - 4 + g.dir[1] * 1.4, 1.6, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // Pac-Man
+    const px = pac.x * TILE + TILE / 2, py = pac.y * TILE + TILE / 2;
+    const open = (Math.sin(mouth * 6) * 0.5 + 0.5) * 0.32 + 0.04;
+    let ang = 0;
+    if (pac.dir[0] === -1) ang = Math.PI;
+    else if (pac.dir[1] === -1) ang = -Math.PI / 2;
+    else if (pac.dir[1] === 1) ang = Math.PI / 2;
+    ctx.save();
+    ctx.translate(px, py); ctx.rotate(ang);
+    ctx.fillStyle = PAC_SKINS[pacSkin].color;
+    ctx.shadowColor = PAC_SKINS[pacSkin].color;
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, TILE * 0.44, open * Math.PI, (2 - open) * Math.PI);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  /* ---------------- UI ---------------- */
+  MAZE_NAMES.forEach((n, i) => $("maze").add(new Option(n, i)));
+  for (let l = 1; l <= 12; l++) $("lvl").add(new Option("Niveau " + l, l));
+  PAC_SKINS.forEach((s, i) => $("skin").add(new Option(s.name, i)));
+  GHOST_SKINS.forEach((s, i) => $("gskin").add(new Option(s.name, i)));
+
+  $("maze").addEventListener("change", e => { loadMaze(+e.target.value, true); running = false; setMsg("Bouge pour jouer"); });
+  $("lvl").addEventListener("change", e => { level = +e.target.value; updateHud(); });
+  $("skin").addEventListener("change", e => { pacSkin = +e.target.value; });
+  $("gskin").addEventListener("change", e => { ghostSkin = +e.target.value; });
+  $("every").addEventListener("input", e => { $("everyVal").textContent = e.target.value; });
+  $("restart").addEventListener("click", () => {
+    level = +$("lvl").value;
+    loadMaze(+$("maze").value, false);
+    running = false;
+    setMsg("Bouge pour jouer");
+  });
+
+  loadMaze(0, false);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
