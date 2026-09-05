@@ -440,7 +440,11 @@ function Game() {
         const gx = (g.x + (g.tx - g.x) * g.t) * cell + cell / 2;
         const gy = (g.y + (g.ty - g.y) * g.t) * cell + cell / 2;
         const r = cell * 0.38;
-        ctx.fillStyle = g.eaten ? "#2b356b" : w.fright > 0 ? "#3d6bff" : g.color;
+        ctx.fillStyle = g.eaten
+          ? "#2b356b"
+          : w.fright > 0
+            ? "#3d6bff"
+            : (ghostPalette[gi % ghostPalette.length] ?? g.color);
         ctx.beginPath();
         ctx.arc(gx, gy, r, Math.PI, 0);
         ctx.lineTo(gx + r, gy + r * 0.9);
