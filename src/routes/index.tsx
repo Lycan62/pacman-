@@ -50,6 +50,21 @@ type Mover = {
 type Status = "menu" | "playing" | "paused" | "dead" | "cleared" | "gameover";
 
 const GHOST_COLORS = ["#ff4d6d", "#5ce1ff", "#ffb35c", "#b28dff"];
+
+const PAC_SKINS = [
+  { name: "Classique", color: "#ffe14d" },
+  { name: "Menthe", color: "#7cf7ff" },
+  { name: "Fraise", color: "#ff6f91" },
+  { name: "Kiwi", color: "#9dff6f" },
+  { name: "Néon violet", color: "#c48dff" },
+] as const;
+
+const GHOST_SKINS = [
+  { name: "Arcade", colors: ["#ff4d6d", "#5ce1ff", "#ffb35c", "#b28dff"] },
+  { name: "Bonbons", colors: ["#ff9ecb", "#ffd76f", "#8ef0c5", "#9db8ff"] },
+  { name: "Lave", colors: ["#ff4d2d", "#ff8a3d", "#ffc93d", "#ff5f8f"] },
+  { name: "Océan", colors: ["#2de2e6", "#3d8bff", "#7cf7ff", "#5affc5"] },
+] as const;
 const AUTO_SWAP_SECONDS = 30;
 const FRIGHT_SECONDS = 7;
 
