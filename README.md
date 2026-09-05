@@ -17,25 +17,25 @@
 Suivez ces étapes dans votre terminal pour récupérer le code et jouer en local :
 
 1. **Cloner le dépôt :**
-   # bash
+  
    git clone [https://github.com/Lycan62/pacman-adventure-maps.git](https://github.com/Lycan62/pacman-adventure-maps.git)
 
 
 
 2. **Accéder au dossier du projet :**
-   # bash
+
 cd pacman-adventure-maps
 
 
 3. **Installer les dépendances :**
-   # bash
+  
 npm install
 
 
 
 
 4. **Lancer le serveur de développement :**
-   # bash
+ 
 
 npm run dev
 
