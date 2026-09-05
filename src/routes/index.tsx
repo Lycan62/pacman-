@@ -50,6 +50,21 @@ type Mover = {
 type Status = "menu" | "playing" | "paused" | "dead" | "cleared" | "gameover";
 
 const GHOST_COLORS = ["#ff4d6d", "#5ce1ff", "#ffb35c", "#b28dff"];
+
+const PAC_SKINS = [
+  { name: "Classique", color: "#ffe14d" },
+  { name: "Menthe", color: "#7cf7ff" },
+  { name: "Fraise", color: "#ff6f91" },
+  { name: "Kiwi", color: "#9dff6f" },
+  { name: "Néon violet", color: "#c48dff" },
+] as const;
+
+const GHOST_SKINS = [
+  { name: "Arcade", colors: ["#ff4d6d", "#5ce1ff", "#ffb35c", "#b28dff"] },
+  { name: "Bonbons", colors: ["#ff9ecb", "#ffd76f", "#8ef0c5", "#9db8ff"] },
+  { name: "Lave", colors: ["#ff4d2d", "#ff8a3d", "#ffc93d", "#ff5f8f"] },
+  { name: "Océan", colors: ["#2de2e6", "#3d8bff", "#7cf7ff", "#5affc5"] },
+] as const;
 const AUTO_SWAP_SECONDS = 30;
 const FRIGHT_SECONDS = 7;
 
@@ -63,6 +78,8 @@ function Game() {
   const [lives, setLives] = useState(3);
   const [autoSwap, setAutoSwap] = useState(true);
   const [swapIn, setSwapIn] = useState(AUTO_SWAP_SECONDS);
+  const [pacSkin, setPacSkin] = useState(0);
+  const [ghostSkin, setGhostSkin] = useState(0);
 
   const world = useRef<{
     maze: ParsedMaze;
@@ -79,6 +96,10 @@ function Game() {
   statusRef.current = status;
   autoRef.current = autoSwap;
   levelRef.current = level;
+  const pacSkinRef = useRef(0);
+  const ghostSkinRef = useRef(0);
+  pacSkinRef.current = pacSkin;
+  ghostSkinRef.current = ghostSkin;
 
   const mazeSource = useMemo(() => MAZES[mazeIndex] ?? MAZES[0] ?? "", [mazeIndex]);
 
@@ -414,11 +435,16 @@ function Game() {
       }
 
       // ghosts
-      for (const g of w.ghosts) {
+      const ghostPalette = GHOST_SKINS[ghostSkinRef.current]?.colors ?? GHOST_COLORS;
+      for (const [gi, g] of w.ghosts.entries()) {
         const gx = (g.x + (g.tx - g.x) * g.t) * cell + cell / 2;
         const gy = (g.y + (g.ty - g.y) * g.t) * cell + cell / 2;
         const r = cell * 0.38;
-        ctx.fillStyle = g.eaten ? "#2b356b" : w.fright > 0 ? "#3d6bff" : g.color;
+        ctx.fillStyle = g.eaten
+          ? "#2b356b"
+          : w.fright > 0
+            ? "#3d6bff"
+            : (ghostPalette[gi % ghostPalette.length] ?? g.color);
         ctx.beginPath();
         ctx.arc(gx, gy, r, Math.PI, 0);
         ctx.lineTo(gx + r, gy + r * 0.9);
@@ -446,7 +472,7 @@ function Game() {
       const py = (pac.y + (pac.ty - pac.y) * pac.t) * cell + cell / 2;
       const mouth = Math.abs(Math.sin(performance.now() / 90)) * 0.32 + 0.04;
       const base = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[pac.dir];
-      ctx.fillStyle = "#ffe14d";
+      ctx.fillStyle = PAC_SKINS[pacSkinRef.current]?.color ?? "#ffe14d";
       ctx.beginPath();
       ctx.moveTo(px, py);
       ctx.arc(px, py, cell * 0.42, base + mouth * Math.PI, base - mouth * Math.PI);
@@ -615,6 +641,52 @@ function Game() {
                     }`}
                   >
                     {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="font-arcade text-sm text-accent-foreground">Skin de Pac-Man</h2>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {PAC_SKINS.map((skin, i) => (
+                  <button
+                    key={skin.name}
+                    onClick={() => setPacSkin(i)}
+                    aria-label={`Skin Pac-Man ${skin.name}`}
+                    title={skin.name}
+                    className={`size-9 rounded-full border-2 transition-transform hover:scale-110 ${
+                      i === pacSkin ? "border-primary ring-2 ring-primary/40" : "border-border"
+                    }`}
+                    style={{ backgroundColor: skin.color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="font-arcade text-sm text-accent-foreground">Skin des fantômes</h2>
+              <div className="mt-2 flex flex-col gap-2">
+                {GHOST_SKINS.map((skin, i) => (
+                  <button
+                    key={skin.name}
+                    onClick={() => setGhostSkin(i)}
+                    className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      i === ghostSkin
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border bg-secondary text-secondary-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <span>{skin.name}</span>
+                    <span className="flex gap-1">
+                      {skin.colors.map((c) => (
+                        <span
+                          key={c}
+                          className="size-3.5 rounded-full border border-background"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </span>
                   </button>
                 ))}
               </div>
