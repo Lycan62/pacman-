@@ -96,6 +96,10 @@ function Game() {
   statusRef.current = status;
   autoRef.current = autoSwap;
   levelRef.current = level;
+  const pacSkinRef = useRef(0);
+  const ghostSkinRef = useRef(0);
+  pacSkinRef.current = pacSkin;
+  ghostSkinRef.current = ghostSkin;
 
   const mazeSource = useMemo(() => MAZES[mazeIndex] ?? MAZES[0] ?? "", [mazeIndex]);
 
