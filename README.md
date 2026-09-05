@@ -1,24 +1,44 @@
-# Pac-Man Arcade Pro
+# Pac-Man Arcade 
 
-que en html faire un jeux pacman jouable avec un systeme que les maps se change toute seul, pouvoir jouer via les fleche directionelle pc ou z (haut) s (bat) q (gauche) et d (droite) pouvoir choisir ses niv faire un systeme de changement de niv tous sa accesible sur pc/tablette ect
+#  Pacman 
 
-This project was built with [Lovable](https://lovable.dev).
+Un jeu Pacman 
 
-## Build with Lovable
+---
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/f2791ce3-5054-4533-bcd3-82833e8ec605).
+## Commandes du jeu
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+* **Déplacement :** Flèches directionnelles ou touches `Z`, `Q`, `S`, `D`
+* **Mobile / Inclinable :** Pavé tactile et glissement de doigt 
+* ** (mieux pour PC)
 
-## Development
+-
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Suivez ces étapes dans votre terminal pour récupérer le code et jouer en local :
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+1. **Cloner le dépôt :**
+   # bash
+   git clone [https://github.com/Lycan62/pacman-adventure-maps.git](https://github.com/Lycan62/pacman-adventure-maps.git)
+
+
+
+2. **Accéder au dossier du projet :**
+   # bash
+cd pacman-adventure-maps
+
+
+3. **Installer les dépendances :**
+   # bash
+npm install
+
+
+
+
+4. **Lancer le serveur de développement :**
+   # bash
+
 npm run dev
-```
+
+
+5. **Lancer le jeu :**
+Ouvrez le lien local qui s'affiche dans votre terminal (par exemple `http://localhost:5173`) dans votre navigateur.
