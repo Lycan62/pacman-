@@ -435,7 +435,8 @@ function Game() {
       }
 
       // ghosts
-      for (const g of w.ghosts) {
+      const ghostPalette = GHOST_SKINS[ghostSkinRef.current]?.colors ?? GHOST_COLORS;
+      for (const [gi, g] of w.ghosts.entries()) {
         const gx = (g.x + (g.tx - g.x) * g.t) * cell + cell / 2;
         const gy = (g.y + (g.ty - g.y) * g.t) * cell + cell / 2;
         const r = cell * 0.38;
