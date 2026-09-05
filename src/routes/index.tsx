@@ -472,7 +472,7 @@ function Game() {
       const py = (pac.y + (pac.ty - pac.y) * pac.t) * cell + cell / 2;
       const mouth = Math.abs(Math.sin(performance.now() / 90)) * 0.32 + 0.04;
       const base = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[pac.dir];
-      ctx.fillStyle = "#ffe14d";
+      ctx.fillStyle = PAC_SKINS[pacSkinRef.current]?.color ?? "#ffe14d";
       ctx.beginPath();
       ctx.moveTo(px, py);
       ctx.arc(px, py, cell * 0.42, base + mouth * Math.PI, base - mouth * Math.PI);
