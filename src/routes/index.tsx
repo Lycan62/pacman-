@@ -646,6 +646,52 @@ function Game() {
               </div>
             </div>
 
+            <div>
+              <h2 className="font-arcade text-sm text-accent-foreground">Skin de Pac-Man</h2>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {PAC_SKINS.map((skin, i) => (
+                  <button
+                    key={skin.name}
+                    onClick={() => setPacSkin(i)}
+                    aria-label={`Skin Pac-Man ${skin.name}`}
+                    title={skin.name}
+                    className={`size-9 rounded-full border-2 transition-transform hover:scale-110 ${
+                      i === pacSkin ? "border-primary ring-2 ring-primary/40" : "border-border"
+                    }`}
+                    style={{ backgroundColor: skin.color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="font-arcade text-sm text-accent-foreground">Skin des fantômes</h2>
+              <div className="mt-2 flex flex-col gap-2">
+                {GHOST_SKINS.map((skin, i) => (
+                  <button
+                    key={skin.name}
+                    onClick={() => setGhostSkin(i)}
+                    className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      i === ghostSkin
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border bg-secondary text-secondary-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <span>{skin.name}</span>
+                    <span className="flex gap-1">
+                      {skin.colors.map((c) => (
+                        <span
+                          key={c}
+                          className="size-3.5 rounded-full border border-background"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary px-3 py-2 text-sm">
               <span>Cartes qui changent seules</span>
               <input
