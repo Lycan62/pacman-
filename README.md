@@ -2,7 +2,7 @@
 
 #  Pacman 
 
-Un jeu Pacman 
+**Un jeu Pacman** 
 
 ---
 
